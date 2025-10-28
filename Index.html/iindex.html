@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scratch Card Surprise</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f7f3e9;
+      font-family: "Arial", sans-serif;
+    }
+    #scratchCard {
+      position: relative;
+      width: 340px;
+      height: 220px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    }
+    #hiddenMessage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      color: #d6336c;
+      background: #fff9e6;
+      padding: 15px;
+    }
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="scratchCard">
+    <div id="hiddenMessage">
+      🎂 Happy Birthdayyyyyy Mamaaaaa<br>
+      May your joints never start 
+      <br>making sound effects <br>
+      One year older, still the coolest🎉
+    </div>
+    <canvas id="scratchCanvas"></canvas>
+  </div>
+
+  <!-- Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    const canvas = document.getElementById("scratchCanvas");
+    const ctx = canvas.getContext("2d");
+    const scratchCard = document.getElementById("scratchCard");
+
+    canvas.width = scratchCard.offsetWidth;
+    canvas.height = scratchCard.offsetHeight;
+
+    // Fill canvas with scratch color
+    ctx.fillStyle = "#888";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "18px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText("Scratch Here 🎁", 90, 110);
+
+    let isDrawing = false;
+
+    function getPosition(e) {
+      let rect = canvas.getBoundingClientRect();
+      let x = e.clientX || (e.touches && e.touches[0].clientX);
+      let y = e.clientY || (e.touches && e.touches[0].clientY);
+      return { x: x - rect.left, y: y - rect.top };
+    }
+
+    function scratch(e) {
+      if (!isDrawing) return;
+      let pos = getPosition(e);
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 25, 0, Math.PI * 2); // Bigger radius = quicker scratch
+      ctx.fill();
+      checkReveal();
+    }
+
+    canvas.addEventListener("mousedown", () => (isDrawing = true));
+    canvas.addEventListener("mouseup", () => (isDrawing = false));
+    canvas.addEventListener("mousemove", scratch);
+
+    canvas.addEventListener("touchstart", () => (isDrawing = true));
+    canvas.addEventListener("touchend", () => (isDrawing = false));
+    canvas.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      scratch(e);
+    });
+
+    // Check how much is scratched
+    function checkReveal() {
+      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let pixels = imageData.data;
+      let transparentPixels = 0;
+
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] === 0) transparentPixels++;
+      }
+
+      let percent = transparentPixels / (canvas.width * canvas.height) * 100;
+
+      if (percent > 50) { // 50% scratch = reveal complete
+        canvas.remove(); // clear the scratch layer
+        launchConfetti();
+      }
+    }
+
+    // Confetti burst
+    function launchConfetti() {
+      var duration = 3 * 1000;
+      var end = Date.now() + duration;
+
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+    }
+  </script>
+</body>
+</html>
